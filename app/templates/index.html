@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - ระบบตรวจเช็กบัญชีการเงิน (Dashboard)</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <h1>{{ app_name }}</h1>
+        </div>
+        <nav style="margin-right: auto; margin-left: 2rem;">
+            <a href="/" style="color: white; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); text-decoration: none; margin-right: 0.5rem; font-weight: 600;">📊 Dashboard</a>
+            <a href="/data-quality" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">🔍 Data Quality Check</a>
+            <a href="/fast-in-out-results" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">⚡ FAST_IN_OUT Results</a>
+            <a href="/safe-data-check" style="color: #4ade80; text-decoration: none; font-weight: 600;">🛡️ Safe Data Check</a>
+        </nav>
+        <div id="db-status-pill" class="status-pill">
+            <span class="status-dot"></span> SQLite: Connected (Read-Only)
+        </div>
+    </header>
+
+    <!-- Quick 3-Step User Workflow Guide Banner -->
+    <div class="workflow-guide-card">
+        <div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.2rem;">
+                🚀 ยินดีต้อนรับสู่ ระบบตรวจเช็กบัญชีการเงินเบื้องต้น (Mini Financial Audit Tool)
+            </div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">
+                ระบบคำนวณสถิติ ตรวจสอบคุณภาพข้อมูล และตรวจจับแพตเทิร์นสุ่มเสี่ยงความผิดปกติทางการเงินแบบ Local Read-Only
+            </div>
+        </div>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <span class="step-num">1</span>
+                <span>ดูภาพรวมสถิติ</span>
+            </div>
+            <div class="workflow-step">
+                <span class="step-num">2</span>
+                <span>คำนวณกฎ FAST_IN_OUT</span>
+            </div>
+            <div class="workflow-step">
+                <span class="step-num">3</span>
+                <span>อนุมัติสร้าง Safe Export</span>
+            </div>
+        </div>
+    </div>
+
+    <main>
+        <section>
+            <h2>📊 สรุปภาพรวมทางการเงิน (Financial Metrics Overview)</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <span>จำนวนสมาชิกทั้งหมด</span>
+                        <span style="font-size: 1.1rem;">👥</span>
+                    </div>
+                    <div class="card-value" id="total-members-val">-</div>
+                    <div class="card-subtext" id="active-members-sub">กำลังโหลดข้อมูล...</div>
+                </div>
+                <div class="card success">
+                    <div class="card-header">
+                        <span>ยอดรวมเงินฝาก (Total Deposits)</span>
+                        <span style="font-size: 1.1rem;">💰</span>
+                    </div>
+                    <div class="card-value" id="total-deposits-val">-</div>
+                    <div class="card-subtext" id="deposit-accounts-sub">กำลังโหลดข้อมูล...</div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span>ยอดหนี้กู้ยืมคงเหลือ (Outstanding Loans)</span>
+                        <span style="font-size: 1.1rem;">📝</span>
+                    </div>
+                    <div class="card-value" id="total-loans-val">-</div>
+                    <div class="card-subtext" id="loan-principal-sub">กำลังโหลดข้อมูล...</div>
+                </div>
+                <div class="card warning">
+                    <div class="card-header">
+                        <span>รายการผลต่างใน GL (GL Differences)</span>
+                        <span style="font-size: 1.1rem;">⚖️</span>
+                    </div>
+                    <div class="card-value" id="gl-issues-val">-</div>
+                    <div class="card-subtext">รายการใน gl_daily ที่พบผลต่าง</div>
+                </div>
+            </div>
+        </section>
+
+        <section style="margin-top: 1.5rem;">
+            <h2>⚠️ สรุปความเสี่ยงและรายการผิดปกติ (Risk & Anomaly Highlights)</h2>
+            <div class="grid">
+                <div class="card warning">
+                    <div class="card-header">รายการนอกเวลาทำการ (Off-Hours)</div>
+                    <div class="card-value" id="off-hours-val">-</div>
+                    <div class="card-subtext">เกิดนอกเวลา 08:00-17:00 / วันหยุด</div>
+                </div>
+                <div class="card danger">
+                    <div class="card-header">รายการมูลค่าสูงผิดปกติ (Outliers Z>3)</div>
+                    <div class="card-value" id="outliers-val">-</div>
+                    <div class="card-subtext">รายการที่มี z-score สถิติ > 3.0</div>
+                </div>
+                <div class="card warning">
+                    <div class="card-header">รายการยกเลิก (Cancelled Txs)</div>
+                    <div class="card-value" id="inactive-txs-val">-</div>
+                    <div class="card-subtext">สถานะ record_status != NORMAL</div>
+                </div>
+                <div class="card danger">
+                    <div class="card-header">รายการอ้างอิงซ้ำ (Duplicate Refs)</div>
+                    <div class="card-value" id="duplicate-refs-val">-</div>
+                    <div class="card-subtext">source_ref ซ้ำซ้อนในระบบ</div>
+                </div>
+                <div class="card danger">
+                    <div class="card-header">Cash Flow Drain</div>
+                    <div class="card-value" id="cashflow-drain-val">-</div>
+                    <div class="card-subtext" id="cashflow-drain-sub">กำลังโหลดข้อมูล...</div>
+                </div>
+            </div>
+        </section>
+
+        <section style="margin-top: 1.5rem;">
+            <h2>⚡ ตรวจสอบกฎ FAST_IN_OUT_3D (Dynamic Rule Audit Calculation)</h2>
+            <div class="rule-panel">
+                <form onsubmit="event.preventDefault(); runFastInOutAudit();">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="large-in-min">1. large_in_min (ยอดเงินเข้าก้อนใหญ่ขั้นต่ำ, บาท)</label>
+                            <input type="number" id="large-in-min" class="form-control" value="500000" min="1" step="10000" oninput="syncResultsLink()">
+                        </div>
+                        <div class="form-group">
+                            <label for="outflow-ratio-min">2. outflow_ratio_min (สัดส่วนเงินถอนออกขั้นต่ำ)</label>
+                            <input type="number" id="outflow-ratio-min" class="form-control" value="0.80" min="0.01" max="1.0" step="0.05" oninput="syncResultsLink()">
+                        </div>
+                        <div class="form-group">
+                            <label for="window-days">3. window_days (กรอบเวลาการพิจารณา, วัน)</label>
+                            <input type="number" id="window-days" class="form-control" value="3" min="1" step="1" oninput="syncResultsLink()">
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" id="btn-calc-fast-in-out" class="btn-primary">🔍 ประมวลผลคำนวณกฎ FAST_IN_OUT_3D</button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.85rem;">
+                        <span style="color: #94a3b8; font-weight: 500;">🎯 ค่าเกณฑ์แนะนำ (Quick Presets):</span>
+                        <button type="button" class="btn-secondary" onclick="applyDashboardPreset(500000, 0.80, 3)">🎯 ค่ามาตรฐาน (500k / 80% / 3วัน)</button>
+                        <button type="button" class="btn-secondary" onclick="applyDashboardPreset(300000, 0.70, 5)">⚡ เกณฑ์เข้มงวด (300k / 70% / 5วัน)</button>
+                        <button type="button" class="btn-secondary" onclick="applyDashboardPreset(1000000, 0.90, 2)">💰 ยอดเงินสูง (1M / 90% / 2วัน)</button>
+                    </div>
+                </form>
+                <div id="fio-error-alert" style="display: none; margin-top: 0.75rem; padding: 0.75rem 1rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #fca5a5; font-size: 0.85rem;"></div>
+
+                <div class="grid" style="margin-top: 1rem;">
+                    <div class="card">
+                        <div class="card-header">จำนวนรายการที่ตรวจ (Valid Transactions)</div>
+                        <div class="card-value" id="fio-total-valid-val">-</div>
+                        <div class="card-subtext">รายการทั้งหมด (ไม่รวม CANCELLED)</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">จำนวนรายการเงินเข้าที่ตรวจ (Audited Inflows)</div>
+                        <div class="card-value" id="fio-audited-val">-</div>
+                        <div class="card-subtext">เงินเข้าที่ >= large_in_min</div>
+                    </div>
+                    <div class="card danger">
+                        <div class="card-header">
+                            <span>รายการที่เข้าเงื่อนไข (REVIEW)</span>
+                            <span id="fio-status-badge" class="badge-tag badge-review">REVIEW</span>
+                        </div>
+                        <div class="card-value" id="fio-flagged-val">-</div>
+                        <div class="card-subtext" id="fio-flagged-accounts-sub">จำนวนบัญชีที่พบ: -</div>
+                        <a href="/fast-in-out-results" id="fio-view-results-link" class="btn-secondary" style="margin-top: 0.6rem; padding: 0.4rem 0.85rem; font-size: 0.85rem; width: fit-content; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd;">📑 ดูตารางผลลัพธ์ (View Windows) ↗</a>
+                    </div>
+                    <div class="card warning">
+                        <div class="card-header">จำนวนผลที่ควรได้ (Expected Count)</div>
+                        <div class="card-value" style="color: #f59e0b;">UNKNOWN</div>
+                        <div class="card-subtext">รอผู้เข้าอบรมตรวจหลังรันระบบ</div>
+                    </div>
+                </div>
+
+                <div style="font-size: 0.85rem; color: #94a3b8; background: rgba(15, 23, 42, 0.6); padding: 1rem 1.25rem; border-radius: 10px; border-left: 4px solid #3b82f6;">
+                    📌 <strong>ข้อสรุปเกณฑ์ขอบเขต (Boundary Criteria Specification):</strong>
+                    <ul style="margin-left: 1.2rem; margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem;">
+                        <li>เงินเข้าที่เท่ากับ <code>large_in_min</code> พอดี ถูกนับรวมในรายการเงินเข้าที่ตรวจ (Inclusive Boundary)</li>
+                        <li>ยอดเงินออกรวม <code>outflow_total</code> ที่เท่ากับ <code>inflow_amount * outflow_ratio_min</code> พอดี ถูกนับเป็นสถานะ <code>REVIEW</code></li>
+                        <li>รายการที่มีสถานะ <code>CANCELLED</code> และยอดเงินออกที่เกิดก่อนเวลาเงินเข้า จะถูกตัดออกจากการคำนวณทั้งหมด</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>🔒 Security Enforced: Relative SQLite Mode=RO | Zero Raw PII Data Exposure | Participant Inspection Ready</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

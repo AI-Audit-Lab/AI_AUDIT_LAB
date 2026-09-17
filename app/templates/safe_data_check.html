@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - ตรวจสอบความปลอดภัยและอนุมัติ Safe Export</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .safe-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Top Header & Breadcrumb */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .back-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: #38bdf8;
+        }
+
+        .page-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .page-desc {
+            color: #94a3b8;
+            font-size: 0.925rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Executive Status Cards Grid */
+        .status-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .summary-card {
+            background: rgba(22, 30, 46, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 1.25rem 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .summary-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .icon-success {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .icon-shield {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .icon-decision {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .summary-content {
+            flex: 1;
+        }
+
+        .summary-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+        }
+
+        .summary-value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-top: 0.15rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .summary-subtext {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.2rem;
+        }
+
+        /* Section Card Base */
+        .section-card {
+            background: rgba(22, 30, 46, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 1.5rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-subtitle {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        /* Compact Thresholds Strip */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .field-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .field-input-group label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .input-compact {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 0.55rem 0.8rem;
+            color: #f8fafc;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+            width: 100%;
+        }
+
+        .input-compact:focus {
+            border-color: #38bdf8;
+        }
+
+        .presets-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            padding-top: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .preset-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #cbd5e1;
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preset-chip:hover {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.35);
+        }
+
+        /* Clean Table */
+        .clean-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .clean-table th {
+            background: rgba(15, 23, 42, 0.7);
+            color: #94a3b8;
+            padding: 0.85rem 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .clean-table th span {
+            display: block;
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 400;
+        }
+
+        .clean-table td {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #f1f5f9;
+        }
+
+        .allowlist-chips-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .chip-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .field-tag {
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 6px;
+            padding: 0.2rem 0.55rem;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        /* Human Decision & Export Control Center */
+        .control-center-card {
+            background: linear-gradient(135deg, rgba(22, 30, 46, 0.95), rgba(15, 23, 42, 0.95));
+            border: 2px solid rgba(56, 189, 248, 0.35);
+            border-radius: 14px;
+            padding: 1.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .workflow-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .status-unapproved {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+
+        .status-approved {
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #4ade80;
+        }
+
+        .status-rejected {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+
+        .step-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .step-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .step-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #f8fafc;
+        }
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #38bdf8;
+            color: #0b0f19;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-button-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-decision {
+            flex: 1;
+            min-width: 140px;
+            padding: 0.75rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-decision-approve {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            color: white;
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+        }
+
+        .btn-decision-approve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-decision-reject {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-decision-reject:hover {
+            background: rgba(239, 68, 68, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .export-button-row {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-download-export {
+            flex: 1;
+            min-width: 105px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #38bdf8;
+            padding: 0.7rem 0.85rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-download-export:hover:not(:disabled) {
+            background: #0284c7;
+            color: white;
+            border-color: #38bdf8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-download-export:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.08);
+            background: rgba(15, 23, 42, 0.4);
+            color: #64748b;
+        }
+
+        /* Collapsible Policy Section */
+        .policy-details {
+            background: rgba(22, 30, 46, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .policy-summary {
+            padding: 1rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .policy-summary:hover {
+            color: #38bdf8;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .policy-content {
+            padding: 0 1.25rem 1.25rem 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .method-keep { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .method-aggregate { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .method-substitute { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .method-drop { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        /* Security Assurance Callout */
+        .security-footer-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.825rem;
+            color: #94a3b8;
+        }
+
+        .assurance-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <h1>{{ app_name }}</h1>
+        </div>
+        <nav style="margin-right: auto; margin-left: 2rem;">
+            <a href="/" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">📊 Dashboard</a>
+            <a href="/data-quality" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">🔍 Data Quality Check</a>
+            <a href="/fast-in-out-results" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">⚡ FAST_IN_OUT Results</a>
+            <a href="/safe-data-check" style="color: white; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.4); text-decoration: none; margin-right: 0.5rem; font-weight: 600;">🛡️ Safe Data Check</a>
+        </nav>
+        <div id="db-status-pill" class="status-pill">
+            <span class="status-dot"></span> SQLite: Connected (Read-Only)
+        </div>
+    </header>
+
+    <div class="safe-container">
+        <!-- Breadcrumb & Page Title -->
+        <div class="page-header">
+            <div>
+                <a href="/" class="back-link">&larr; กลับหน้าหลัก Dashboard</a>
+                <div class="page-title">
+                    <span>🛡️ ตรวจสอบและอนุมัติ Safe Export</span>
+                </div>
+                <div class="page-desc">
+                    ตรวจสอบความปลอดภัยของข้อมูล คัดกรองข้อมูลส่วนบุคคล (PII) 100% ก่อนอนุมัติส่งออกรายงาน
+                </div>
+            </div>
+            <!-- Backwards-compatible status container -->
+            <div id="badge-status-container" class="badge-tag badge-pass" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">
+                🛡️ ตรวจความปลอดภัย: ผ่านเกณฑ์ (PASS)
+            </div>
+        </div>
+
+        <!-- 1. Executive Status Summary Grid (At a glance) -->
+        <div class="status-summary-grid">
+            <div class="summary-card">
+                <div class="summary-icon icon-success">
+                    ✓
+                </div>
+                <div class="summary-content">
+                    <div class="summary-label">สถานะความปลอดภัย (Security Check)</div>
+                    <div id="val-status-text" class="summary-value" style="color: #4ade80;">
+                        PASS
+                    </div>
+                    <div class="summary-subtext">ผ่านเกณฑ์ Allowlist ปลอดภัย 100%</div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-icon icon-shield">
+                    🔒
+                </div>
+                <div class="summary-content">
+                    <div class="summary-label">ข้อมูลต้องห้าม / PII ที่พบ (Forbidden Fields)</div>
+                    <div id="val-forbidden-count" class="summary-value" style="color: #4ade80;">
+                        0 รายการ
+                    </div>
+                    <div class="summary-subtext">ไม่มีข้อมูลส่วนบุคคลรั่วไหล</div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-icon icon-decision" id="decision-icon-box">
+                    ⏳
+                </div>
+                <div class="summary-content">
+                    <div class="summary-label">การอนุมัติส่งออก (Human Decision)</div>
+                    <div id="decision-summary-val" class="summary-value" style="color: #fbbf24;">
+                        รอการอนุมัติ
+                    </div>
+                    <div class="summary-subtext" id="decision-summary-sub">ไม่อนุมัติอัตโนมัติ (Default Unapproved)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Audit Thresholds Strip (Clean & Compact) -->
+        <div class="section-card">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">⚙️ เกณฑ์การตรวจสอบ (Audit Thresholds)</div>
+                    <div class="section-subtitle">ปรับเกณฑ์เพื่อตรวจสอบผลลัพธ์ Safe Data ได้ทันที</div>
+                </div>
+            </div>
+
+            <form id="safe-filter-form" onsubmit="event.preventDefault(); loadSafeDataCheck();">
+                <div class="filter-grid">
+                    <div class="field-input-group">
+                        <label for="safe-large-in">ยอดเงินเข้าขั้นต่ำ (บาท)</label>
+                        <input type="number" id="safe-large-in" class="input-compact" value="500000" min="1" step="10000">
+                    </div>
+                    <div class="field-input-group">
+                        <label for="safe-ratio">สัดส่วนเงินออก (0.01 - 1.0)</label>
+                        <input type="number" id="safe-ratio" class="input-compact" value="0.80" min="0.01" max="1.0" step="0.05">
+                    </div>
+                    <div class="field-input-group">
+                        <label for="safe-days">กรอบเวลา (วัน)</label>
+                        <input type="number" id="safe-days" class="input-compact" value="3" min="1" step="1">
+                    </div>
+                    <div class="field-input-group">
+                        <button type="submit" class="btn-primary" style="padding: 0.55rem 1rem;">
+                            🔍 ตรวจสอบใหม่
+                        </button>
+                    </div>
+                </div>
+
+                <div class="presets-row">
+                    <span style="color: #94a3b8; font-size: 0.8rem;">🎯 เกณฑ์แนะนำ:</span>
+                    <button type="button" class="preset-chip" onclick="setSafePreset(500000, 0.80, 3)">ค่ามาตรฐาน (500k / 80% / 3วัน)</button>
+                    <button type="button" class="preset-chip" onclick="setSafePreset(300000, 0.70, 5)">เกณฑ์เข้มงวด (300k / 70% / 5วัน)</button>
+                    <button type="button" class="preset-chip" onclick="setSafePreset(1000000, 0.90, 2)">ยอดเงินสูง (1M / 90% / 2วัน)</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 3. Safe Data Preview Table (Simplified & Localized) -->
+        <div class="section-card">
+            <div class="section-header">
+                <div>
+                    <div class="section-title">👁️ ตัวอย่างข้อมูลที่จะส่งออก (Safe Data Preview)</div>
+                    <div class="section-subtitle">เฉพาะข้อมูลสรุปสถิติที่ปลอดภัย &bull; ปราศจากเลขบัญชีและชื่อบุคคล</div>
+                </div>
+                <div id="txt-status" style="font-size: 0.85rem; color: #4ade80; font-weight: 700; background: rgba(34, 197, 94, 0.1); padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.2);">
+                    PASS (ปลอดภัย)
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="clean-table" id="sample-preview-table">
+                    <thead id="sample-preview-head">
+                        <tr>
+                            <th>รหัสกฎ<span>Rule ID</span></th>
+                            <th>รายการที่ตรวจ<span>Checked</span></th>
+                            <th>พบความเสี่ยง<span>Flagged</span></th>
+                            <th>เกณฑ์เงินเข้า<span>Min Inflow</span></th>
+                            <th>สัดส่วนเงินออก<span>Outflow Ratio</span></th>
+                            <th>กรอบเวลา<span>Window</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="sample-preview-body">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="allowlist-chips-box">
+                <span class="chip-label">🛡️ รายการช่องข้อมูลที่อนุญาต (Allowlist Fields):</span>
+                <div id="val-field-tags" style="display: inline-flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Action Control Center: Human-in-the-Loop Approval & Export -->
+        <div class="control-center-card">
+            <div class="section-header" style="margin-bottom: 0.75rem;">
+                <div class="section-title" style="font-size: 1.25rem;">
+                    🛡️ ศูนย์ควบคุมการอนุมัติและส่งออก (Human Approval & Export Control)
+                </div>
+                <div style="font-size: 0.825rem; color: #38bdf8;">
+                    ควบคุมความปลอดภัยโดยมนุษย์ (Human-in-the-Loop)
+                </div>
+            </div>
+
+            <!-- Workflow Status Banner -->
+            <div id="approval-banner" class="workflow-banner status-unapproved">
+                <div>
+                    <div style="font-size: 1.05rem; font-weight: 700;" id="banner-text">
+                        ⚠️ สถานะ: รอการพิจารณา (Pending Human Decision)
+                    </div>
+                    <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.15rem;" id="banner-subtext">
+                        ระบบล็อคการสร้างไฟล์ไว้เพื่อความปลอดภัย กรุณาตรวจสอบข้อมูลด้านบนแล้วกด "อนุมัติ" เพื่อเปิดใช้งานการดาวน์โหลด
+                    </div>
+                </div>
+                <div id="approval-badge-indicator" class="badge-tag badge-unknown" style="font-size: 0.85rem; padding: 0.35rem 0.8rem;">
+                    PENDING
+                </div>
+            </div>
+
+            <div class="step-container">
+                <!-- Step 1: Decision -->
+                <div class="step-box">
+                    <div class="step-header">
+                        <span class="step-number">1</span>
+                        <span>ขั้นตอนที่ 1: การตัดสินใจโดยมนุษย์ (Human Decision)</span>
+                    </div>
+                    <div style="font-size: 0.825rem; color: #94a3b8;">
+                        ผู้ตรวจสอบต้องตัดสินใจยืนยันความปลอดภัยของข้อมูลก่อนสร้างไฟล์
+                    </div>
+                    <div class="action-button-row">
+                        <button type="button" class="btn-decision btn-decision-approve" onclick="handleHumanDecision('APPROVED')">
+                            ✅ อนุมัติ (Approve)
+                        </button>
+                        <button type="button" class="btn-decision btn-decision-reject" onclick="handleHumanDecision('REJECTED')">
+                            ❌ ปฏิเสธ (Reject)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Download Options -->
+                <div class="step-box">
+                    <div class="step-header">
+                        <span class="step-number">2</span>
+                        <span>ขั้นตอนที่ 2: ส่งออกไฟล์รายงาน (Safe Export)</span>
+                    </div>
+                    <div style="font-size: 0.825rem; color: #94a3b8;" id="export-hint-text">
+                        🔒 ปลดล็อคอัตโนมัติเมื่อได้รับการอนุมัติในขั้นตอนที่ 1
+                    </div>
+                    <div class="export-button-row">
+                        <button type="button" id="btn-export-csv" class="btn-download-export" onclick="downloadSafeExport('csv')" disabled title="ต้องได้รับอนุมัติจาก Human ก่อน">
+                            📄 CSV
+                        </button>
+                        <button type="button" id="btn-export-excel" class="btn-download-export" onclick="downloadSafeExport('excel')" disabled title="ต้องได้รับอนุมัติจาก Human ก่อน">
+                            📊 Excel
+                        </button>
+                        <button type="button" id="btn-export-pdf" class="btn-download-export" onclick="downloadSafeExport('pdf')" disabled title="ต้องได้รับอนุมัติจาก Human ก่อน">
+                            📑 PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Collapsible Policy & Sanitization Rules (Neat & Non-intrusive) -->
+        <details class="policy-details">
+            <summary class="policy-summary">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📋 นโยบายการคัดกรองข้อมูลและความปลอดภัยรายช่อง (Sanitization Policy)</span>
+                    <span class="badge-tag badge-pass" style="font-size: 0.75rem;">11 กฎความปลอดภัย</span>
+                </div>
+                <span style="font-size: 0.8rem; color: #38bdf8;">คลิกเพื่อดูรายละเอียด &darr;</span>
+            </summary>
+            <div class="policy-content">
+                <div style="overflow-x: auto; margin-top: 0.75rem;">
+                    <table class="clean-table">
+                        <thead>
+                            <tr>
+                                <th>ชื่อช่องข้อมูล (Field Name)</th>
+                                <th>หมวดหมู่ (Category)</th>
+                                <th>วิธีการจัดการที่ใช้ (Method)</th>
+                                <th>คำอธิบายวัตถุประสงค์ (Description)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transformation-rules-body">
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+
+        <!-- 6. Security Assurance Callout (Concise Footer) -->
+        <div class="security-footer-box">
+            <div class="assurance-item">
+                <span>🛡️</span>
+                <span>ประมวลผลภายในเครื่อง 100% (Strictly Local)</span>
+            </div>
+            <div class="assurance-item">
+                <span>🚫</span>
+                <span>ห้ามเชื่อมต่อ External LLM ภายนอก</span>
+            </div>
+            <div class="assurance-item">
+                <span>🔒</span>
+                <span>ฐานข้อมูลต้นทาง Read-Only ปลอดภัย</span>
+            </div>
+            <div class="assurance-item">
+                <span>📝</span>
+                <span>บันทึก Audit Log สถานะโดยไม่เก็บข้อมูลจริง</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentApprovalState = "UNAPPROVED";
+
+        function setSafePreset(largeIn, ratio, days) {
+            document.getElementById("safe-large-in").value = largeIn;
+            document.getElementById("safe-ratio").value = ratio;
+            document.getElementById("safe-days").value = days;
+            loadSafeDataCheck();
+        }
+
+        async function handleHumanDecision(decision) {
+            currentApprovalState = decision;
+            const banner = document.getElementById("approval-banner");
+            const bannerText = document.getElementById("banner-text");
+            const bannerSubtext = document.getElementById("banner-subtext");
+            const badgeIndicator = document.getElementById("approval-badge-indicator");
+            const btnCsv = document.getElementById("btn-export-csv");
+            const btnExcel = document.getElementById("btn-export-excel");
+            const btnPdf = document.getElementById("btn-export-pdf");
+            const exportHint = document.getElementById("export-hint-text");
+            
+            const summaryVal = document.getElementById("decision-summary-val");
+            const summarySub = document.getElementById("decision-summary-sub");
+            const iconBox = document.getElementById("decision-icon-box");
+
+            try {
+                // Send approval status to server for audit logging (logs only status and timestamp)
+                await fetch('/api/v1/safe-data/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: decision })
+                });
+            } catch (err) {
+                console.warn("Audit log ping warning:", err);
+            }
+
+            if (decision === "APPROVED") {
+                banner.className = "workflow-banner status-approved";
+                bannerText.textContent = "🟢 อนุมัติแล้ว (APPROVED) - พร้อมสร้างไฟล์ Safe Export";
+                bannerSubtext.textContent = "ผู้ตรวจสอบได้ยืนยันความปลอดภัยเรียบร้อยแล้ว สามารถเลือกดาวน์โหลดไฟล์ในรูปแบบที่ต้องการได้ทันที";
+                badgeIndicator.className = "badge-tag badge-pass";
+                badgeIndicator.textContent = "APPROVED";
+
+                if (summaryVal) {
+                    summaryVal.textContent = "อนุมัติแล้ว";
+                    summaryVal.style.color = "#4ade80";
+                }
+                if (summarySub) summarySub.textContent = "พร้อมส่งออกไฟล์รายงาน";
+                if (iconBox) {
+                    iconBox.className = "summary-icon icon-success";
+                    iconBox.textContent = "✓";
+                }
+
+                if (exportHint) exportHint.textContent = "🔓 ปลดล็อคเรียบร้อยแล้ว สามารถคลิกดาวน์โหลดได้ทันที";
+                
+                btnCsv.disabled = false;
+                btnExcel.disabled = false;
+                btnPdf.disabled = false;
+                btnCsv.title = "ดาวน์โหลดรายงาน CSV";
+                btnExcel.title = "ดาวน์โหลดรายงาน Excel";
+                btnPdf.title = "ดาวน์โหลดรายงาน PDF";
+            } else {
+                banner.className = "workflow-banner status-rejected";
+                bannerText.textContent = "🔴 ปฏิเสธการอนุมัติ (REJECTED) - ระงับการสร้างไฟล์";
+                bannerSubtext.textContent = "คำขอส่งออกถูกปฏิเสธ ระบบจะไม่สร้างไฟล์ใดๆ ทั้งสิ้น และได้บันทึก Audit Log เรียบร้อยแล้ว";
+                badgeIndicator.className = "badge-tag badge-review";
+                badgeIndicator.textContent = "REJECTED";
+
+                if (summaryVal) {
+                    summaryVal.textContent = "ปฏิเสธ (REJECTED)";
+                    summaryVal.style.color = "#f87171";
+                }
+                if (summarySub) summarySub.textContent = "ระงับการสร้างไฟล์ 100%";
+                if (iconBox) {
+                    iconBox.className = "summary-icon";
+                    iconBox.style.background = "rgba(239, 68, 68, 0.15)";
+                    iconBox.style.color = "#f87171";
+                    iconBox.style.border = "1px solid rgba(239, 68, 68, 0.3)";
+                    iconBox.textContent = "✕";
+                }
+
+                if (exportHint) exportHint.textContent = "🔒 ถูกระงับเนื่องจากถูกปฏิเสธการอนุมัติ";
+
+                btnCsv.disabled = true;
+                btnExcel.disabled = true;
+                btnPdf.disabled = true;
+                btnCsv.title = "ถูกระงับเนื่องจากถูกปฏิเสธ";
+                btnExcel.title = "ถูกระงับเนื่องจากถูกปฏิเสธ";
+                btnPdf.title = "ถูกระงับเนื่องจากถูกปฏิเสธ";
+            }
+        }
+
+        function downloadSafeExport(format) {
+            if (currentApprovalState !== "APPROVED") {
+                alert("คำเตือน: ต้องได้รับอนุมัติจาก Human ก่อนจึงจะสามารถดาวน์โหลดไฟล์ได้");
+                return;
+            }
+
+            const largeInMin = parseFloat(document.getElementById("safe-large-in")?.value || "500000");
+            const outflowRatioMin = parseFloat(document.getElementById("safe-ratio")?.value || "0.80");
+            const windowDays = parseInt(document.getElementById("safe-days")?.value || "3", 10);
+
+            const query = new URLSearchParams({
+                format: format,
+                approved: "true",
+                large_in_min: largeInMin,
+                outflow_ratio_min: outflowRatioMin,
+                window_days: windowDays
+            });
+
+            window.location.href = `/api/v1/safe-data/export?${query.toString()}`;
+        }
+
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(val);
+        }
+
+        async function loadSafeDataCheck() {
+            try {
+                const largeInMin = parseFloat(document.getElementById("safe-large-in")?.value || "500000");
+                const outflowRatioMin = parseFloat(document.getElementById("safe-ratio")?.value || "0.80");
+                const windowDays = parseInt(document.getElementById("safe-days")?.value || "3", 10);
+
+                const query = new URLSearchParams({
+                    large_in_min: largeInMin,
+                    outflow_ratio_min: outflowRatioMin,
+                    window_days: windowDays
+                });
+
+                const res = await fetch(`/api/v1/safe-data?${query.toString()}`);
+                if (!res.ok) throw new Error("ไม่สามารถดึงข้อมูล Safe Data ได้");
+                const data = await res.json();
+                
+                const verification = data.verification || {};
+                const safeData = data.safe_data || [];
+                const transformationRules = data.transformation_rules || [];
+                
+                // Update Verification Summary
+                const forbiddenCount = verification.forbidden_count || 0;
+                const status = verification.status || "FAIL";
+                const fields = verification.field_names || [];
+
+                const valForbidden = document.getElementById("val-forbidden-count");
+                if (valForbidden) {
+                    valForbidden.textContent = forbiddenCount + " รายการ";
+                    valForbidden.style.color = forbiddenCount === 0 ? "#4ade80" : "#f87171";
+                }
+
+                const valStatus = document.getElementById("val-status-text");
+                const txtStatus = document.getElementById("txt-status");
+                const badgeStatus = document.getElementById("badge-status-container");
+
+                if (status === "PASS") {
+                    if (valStatus) {
+                        valStatus.textContent = "PASS";
+                        valStatus.style.color = "#4ade80";
+                    }
+                    if (txtStatus) {
+                        txtStatus.textContent = "PASS (ปลอดภัย 100%)";
+                        txtStatus.style.color = "#4ade80";
+                    }
+                    if (badgeStatus) {
+                        badgeStatus.className = "badge-tag badge-pass";
+                        badgeStatus.textContent = "🛡️ ตรวจความปลอดภัย: ผ่านเกณฑ์ (PASS)";
+                    }
+                } else {
+                    if (valStatus) {
+                        valStatus.textContent = "FAIL";
+                        valStatus.style.color = "#f87171";
+                    }
+                    if (txtStatus) {
+                        txtStatus.textContent = "FAIL (พบข้อบกพร่อง)";
+                        txtStatus.style.color = "#f87171";
+                    }
+                    if (badgeStatus) {
+                        badgeStatus.className = "badge-tag badge-review";
+                        badgeStatus.textContent = "⚠️ ไม่ผ่านเกณฑ์ (FAIL)";
+                    }
+                }
+
+                // Render Allowed Field Chips
+                const tagsContainer = document.getElementById("val-field-tags");
+                if (tagsContainer) {
+                    tagsContainer.innerHTML = "";
+                    fields.forEach(f => {
+                        const span = document.createElement("span");
+                        span.className = "field-tag";
+                        span.textContent = f;
+                        tagsContainer.appendChild(span);
+                    });
+                }
+
+                // Render Sample Preview Table with Clean Localized Layout
+                const previewBody = document.getElementById("sample-preview-body");
+                if (previewBody) {
+                    previewBody.innerHTML = "";
+                    if (safeData.length > 0) {
+                        safeData.forEach(row => {
+                            const tr = document.createElement("tr");
+                            const ratioPct = Math.round((row.outflow_ratio_min || 0) * 100);
+                            tr.innerHTML = `
+                                <td><span class="field-tag" style="font-weight:700;">${row.rule_id || 'N/A'}</span></td>
+                                <td style="font-weight:600;">${(row.records_checked || 0).toLocaleString()} รายการ</td>
+                                <td>
+                                    <span class="badge-tag ${row.records_matched > 0 ? 'badge-review' : 'badge-pass'}">
+                                        ${(row.records_matched || 0).toLocaleString()} รายการ
+                                    </span>
+                                </td>
+                                <td style="font-family: monospace; color: #38bdf8;">${formatCurrency(row.large_in_min || 0)}</td>
+                                <td>${ratioPct}%</td>
+                                <td>${row.window_days || 0} วัน</td>
+                            `;
+                            previewBody.appendChild(tr);
+                        });
+                    } else {
+                        previewBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding: 2rem;">ไม่มีรายการตัวอย่างข้อมูล</td></tr>';
+                    }
+                }
+
+                // Render Transformation Rules Table (in collapsible details)
+                const rulesBody = document.getElementById("transformation-rules-body");
+                if (rulesBody) {
+                    rulesBody.innerHTML = "";
+                    transformationRules.forEach(rule => {
+                        const tr = document.createElement("tr");
+                        let badgeClass = "method-keep";
+                        if (rule.method.includes("รวมยอด")) badgeClass = "method-aggregate";
+                        if (rule.method.includes("แทนค่า")) badgeClass = "method-substitute";
+                        if (rule.method.includes("ตัดออก") || rule.method.includes("ปิดบัง")) badgeClass = "method-drop";
+
+                        tr.innerHTML = `
+                            <td style="font-family: monospace; color: #38bdf8; font-weight: 500;">${rule.field_name}</td>
+                            <td style="color: #cbd5e1;">${rule.category}</td>
+                            <td><span class="method-badge ${badgeClass}">${rule.method}</span></td>
+                            <td style="color: #94a3b8; font-size: 0.85rem;">${rule.description}</td>
+                        `;
+                        rulesBody.appendChild(tr);
+                    });
+                }
+
+            } catch (err) {
+                console.error("Error loading safe data:", err);
+                const previewBody = document.getElementById("sample-preview-body");
+                if (previewBody) {
+                    previewBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#f87171; padding: 1.5rem;">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${err.message}</td></tr>`;
+                }
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadSafeDataCheck);
+    </script>
+</body>
+</html>

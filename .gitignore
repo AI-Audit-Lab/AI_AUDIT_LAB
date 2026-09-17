@@ -1,0 +1,10 @@
+data/
+output/
+.env
+*.key
+*.pem
+credentials*
+token_mapping*
+.venv/
+__pycache__/
+*.pyc

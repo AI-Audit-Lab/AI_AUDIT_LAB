@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <h1>{{ app_name }}</h1>
+        </div>
+        <div id="db-status-pill" class="status-pill">
+            <span class="status-dot"></span> Checking DB Status...
+        </div>
+    </header>
+
+    <main>
+        <section>
+            <h2>📊 สรุปภาพรวมทางการเงิน (Safe Financial Overview)</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">จำนวนสมาชิกทั้งหมด (Total Members)</div>
+                    <div class="card-value" id="total-members-val">-</div>
+                    <div class="card-subtext" id="active-members-sub">Loading...</div>
+                </div>
+                <div class="card success">
+                    <div class="card-header">ยอดรวมเงินฝาก (Total Deposits)</div>
+                    <div class="card-value" id="total-deposits-val">-</div>
+                    <div class="card-subtext" id="deposit-accounts-sub">Loading...</div>
+                </div>
+                <div class="card">
+                    <div class="card-header">ยอดหนี้กู้ยืมคงเหลือ (Total Outstanding Loans)</div>
+                    <div class="card-value" id="total-loans-val">-</div>
+                    <div class="card-subtext" id="loan-principal-sub">Loading...</div>
+                </div>
+                <div class="card warning">
+                    <div class="card-header">รายการต่างใน GL (GL Differences)</div>
+                    <div class="card-value" id="gl-issues-val">-</div>
+                    <div class="card-subtext">รายการใน gl_daily ที่พบผลต่าง</div>
+                </div>
+            </div>
+        </section>
+
+        <section style="margin-top: 2rem;">
+            <h2>⚠️ สรุปความเสี่ยงและรายการผิดปกติ (Audit Risk & Anomalies)</h2>
+            <div class="grid">
+                <div class="card warning">
+                    <div class="card-header">รายการนอกเวลาทำการ (Off-Hours Txs)</div>
+                    <div class="card-value" id="off-hours-val">-</div>
+                    <div class="card-subtext">รายการเกิดนอกเวลา 08:00-17:00 / วันหยุด</div>
+                </div>
+                <div class="card danger">
+                    <div class="card-header">รายการมูลค่าสูงผิดปกติ (Outliers Z>3)</div>
+                    <div class="card-value" id="outliers-val">-</div>
+                    <div class="card-subtext">รายการที่มี z-score สถิติ > 3.0</div>
+                </div>
+                <div class="card warning">
+                    <div class="card-header">รายการยกเลิก (Cancelled Txs)</div>
+                    <div class="card-value" id="inactive-txs-val">-</div>
+                    <div class="card-subtext">สถานะ record_status != NORMAL</div>
+                </div>
+                <div class="card danger">
+                    <div class="card-header">รายการอ้างอิงซ้ำ (Duplicate Refs)</div>
+                    <div class="card-value" id="duplicate-refs-val">-</div>
+                    <div class="card-subtext">source_ref ซ้ำซ้อนในระบบ</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>🔒 Security Enforced: Relative SQLite Mode=RO | Zero Raw PII Data Exposure</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

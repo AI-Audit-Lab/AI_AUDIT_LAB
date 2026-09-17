@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - FAST_IN_OUT_3D Results</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .filter-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.75rem;
+        }
+        .filter-header h3 {
+            font-size: 1.05rem;
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(59, 130, 246, 0.12);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 9999px;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+        .ratio-meter {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .ratio-bar-bg {
+            width: 80px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .ratio-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            border-radius: 3px;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+        }
+        .stat-box .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+        .stat-box .val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .stat-box.danger .val {
+            color: var(--danger-color);
+        }
+        .stat-box.warning .val {
+            color: var(--warning-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <h1>{{ app_name }}</h1>
+        </div>
+        <nav style="margin-right: auto; margin-left: 2rem;">
+            <a href="/" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">📊 Dashboard</a>
+            <a href="/data-quality" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">🔍 Data Quality Check</a>
+            <a href="/fast-in-out-results" style="color: white; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); text-decoration: none; margin-right: 0.5rem; font-weight: 600;">⚡ FAST_IN_OUT Results</a>
+            <a href="/safe-data-check" style="color: #4ade80; text-decoration: none; font-weight: 600;">🛡️ Safe Data Check</a>
+        </nav>
+        <div id="db-status-pill" class="status-pill">
+            <span class="status-dot"></span> SQLite: Connected (Read-Only)
+        </div>
+    </header>
+
+    <main>
+        <section>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <h2>⚡ ผลการตรวจสอบกฎ FAST_IN_OUT_3D (Flagged Window Results)</h2>
+                    <p style="color: #94a3b8; font-size: 0.925rem; max-width: 800px; margin-top: 0.3rem;">
+                        แสดงรายการหน้าต่างเวลา (Forward Sliding Windows) ที่พบเงินเข้าก้อนใหญ่และมีการถอน/โอนออกอย่างรวดเร็วภายในกรอบเวลาที่กำหนดตามเกณฑ์การตรวจ
+                    </p>
+                </div>
+                <div class="security-badge">
+                    🔒 Zero PII Exposed: Approved Columns Only
+                </div>
+            </div>
+
+            <!-- Parameters Filter Panel -->
+            <div class="filter-card">
+                <div class="filter-header">
+                    <h3>⚙️ พารามิเตอร์เกณฑ์การตรวจสอบ (Audit Thresholds)</h3>
+                    <span style="font-size: 0.8rem; color: #94a3b8;">สามารถปรับเปลี่ยนค่าเกณฑ์เพื่อประมวลผลซ้ำได้ทันที</span>
+                </div>
+                <form id="filter-form" onsubmit="handleFilterSubmit(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="large-in-min">large_in_min (ยอดเงินเข้าขั้นต่ำ, บาท)</label>
+                            <input type="number" id="large-in-min" class="form-control" value="500000" min="1" step="10000" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="outflow-ratio-min">outflow_ratio_min (สัดส่วนเงินออกขั้นต่ำ)</label>
+                            <input type="number" id="outflow-ratio-min" class="form-control" value="0.80" min="0.01" max="1.0" step="0.05" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="window-days">window_days (กรอบเวลา, วัน)</label>
+                            <input type="number" id="window-days" class="form-control" value="3" min="1" step="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="page-size">page_size (จำนวนแถวต่อหน้า)</label>
+                            <select id="page-size" class="form-control" style="background: rgba(11, 15, 25, 0.8); color: var(--text-main);" onchange="handleFilterSubmit(event)">
+                                <option value="10">10 แถว / หน้า</option>
+                                <option value="20" selected>20 แถว / หน้า</option>
+                                <option value="50">50 แถว / หน้า</option>
+                                <option value="100">100 แถว / หน้า</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: flex; gap: 0.5rem;">
+                            <button type="submit" id="btn-apply-filter" class="btn-primary" style="flex: 2;">
+                                🔍 ประมวลผล
+                            </button>
+                            <button type="button" id="btn-reset-filter" class="btn-secondary" style="flex: 1;" onclick="resetFilters()">
+                                รีเซ็ต
+                            </button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.85rem;">
+                        <span style="color: #94a3b8;">🎯 ค่าเกณฑ์แนะนำ (Presets):</span>
+                        <button type="button" class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="applyPreset(500000, 0.80, 3)">ค่ามาตรฐาน (500k / 80% / 3วัน)</button>
+                        <button type="button" class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="applyPreset(300000, 0.70, 5)">เกณฑ์เข้มงวด (300k / 70% / 5วัน)</button>
+                        <button type="button" class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="applyPreset(1000000, 0.90, 2)">ยอดเงินสูง (1M / 90% / 2วัน)</button>
+                    </div>
+                </form>
+                <div id="error-alert" class="alert-danger" style="display: none; margin-top: 1rem;"></div>
+            </div>
+
+            <!-- Summary KPI Strip -->
+            <div class="summary-stats">
+                <div class="stat-box danger">
+                    <div class="label">จำนวนหน้าต่างที่เข้าเกณฑ์ (Flagged Windows)</div>
+                    <div class="val" id="stat-flagged-count">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">เกณฑ์เงินเข้า / สัดส่วนเงินออก</div>
+                    <div class="val" id="stat-thresholds" style="font-size: 1.15rem; margin-top: 0.2rem;">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">สถานะภาพรวม (Overall Status)</div>
+                    <div class="val" id="stat-review-badge" style="margin-top: 0.1rem;">
+                        <span class="badge-tag badge-review">REVIEW</span>
+                    </div>
+                </div>
+                <div class="stat-box warning">
+                    <div class="label">จำนวนผลที่ควรได้ (Expected Count)</div>
+                    <div class="val" style="color: #f59e0b;">UNKNOWN</div>
+                </div>
+            </div>
+
+            <!-- Results Table Container -->
+            <div class="data-table-container">
+                <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.4);">
+                    <div style="font-weight: 600; font-size: 0.95rem; color: #f1f5f9;">
+                        📋 รายการหน้าต่างที่ต้องตรวจสอบ (Flagged Windows Table)
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <div id="export-buttons" style="display: none; gap: 0.5rem;">
+                            <button type="button" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="exportResults('csv')">CSV</button>
+                            <button type="button" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="exportResults('excel')">Excel</button>
+                            <button type="button" class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="exportResults('pdf')">PDF</button>
+                        </div>
+                        <div id="table-record-info" style="font-size: 0.85rem; color: #94a3b8; margin-left: 1rem;">
+                            กำลังโหลดข้อมูล...
+                        </div>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="results-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 70px;" class="text-center">ลำดับ</th>
+                                <th style="width: 150px;">วันที่เงินเข้า (Anchor Date)</th>
+                                <th class="text-right">ยอดเงินเข้า (Inflow Amount)</th>
+                                <th class="text-right">ยอดเงินออกรวมในกรอบเวลา (Outflow Total)</th>
+                                <th class="text-right" style="width: 180px;">สัดส่วนเงินออก (Outflow Ratio)</th>
+                                <th class="text-center" style="width: 240px;">สถานะการตรวจและเหตุผล (Audit Decision & Reason)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody">
+                            <!-- Rows rendered dynamically by JavaScript -->
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <div class="empty-state-icon">⏳</div>
+                                    <div>กำลังประมวลผลข้อมูล...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Bar -->
+                <div class="pagination-wrapper" id="pagination-bar" style="display: none;">
+                    <div class="pagination-info" id="pagination-info-text">
+                        หน้า 1 จาก 1 (ทั้งหมด 1 รายการ)
+                    </div>
+                    <div class="pagination-controls">
+                        <button type="button" class="pagination-btn" id="btn-first-page" onclick="goToPage(1)">« หน้าแรก</button>
+                        <button type="button" class="pagination-btn" id="btn-prev-page" onclick="goToPrevPage()">‹ ก่อนหน้า</button>
+                        <span id="page-display" class="mono" style="font-size: 0.85rem; padding: 0 0.5rem; color: #93c5fd;">หน้า 1</span>
+                        <button type="button" class="pagination-btn" id="btn-next-page" onclick="goToNextPage()">ถัดไป ›</button>
+                        <button type="button" class="pagination-btn" id="btn-last-page" onclick="goToLastPage()">หน้าสุดท้าย »</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boundary & Audit Rules Information Box -->
+            <div style="margin-top: 1.5rem; font-size: 0.825rem; color: #94a3b8; background: rgba(0, 0, 0, 0.25); padding: 1.2rem 1.5rem; border-radius: 12px; border-left: 4px solid #3b82f6;">
+                <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 0.4rem; font-size: 0.9rem;">
+                    🛡️ ข้อมูลเกณฑ์และข้อกำหนดด้านความปลอดภัย (Audit & Security Specifications):
+                </div>
+                <ul style="margin-left: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; line-height: 1.5;">
+                    <li><strong>ขอบเขตการนับเงินเข้า (Anchor Inflow):</strong> รายการที่มีทิศทาง <code>IN</code> และยอดเงิน <code>>= large_in_min</code> (รวมขอบเขตเท่ากับ)</li>
+                    <li><strong>ขอบเขตการคำนวณเงินออก (Outflow Window):</strong> รวมเฉพาะเงินออก <code>OUT</code> ที่เกิดขึ้นในกรอบเวลา <code>[anchor_date, anchor_date + window_days]</code> โดยตัดยอดเงินออกที่เกิดก่อนเงินเข้าออกโดยเด็ดขาด</li>
+                    <li><strong>เกณฑ์ส่งตรวจ (Flagged Condition):</strong> ยอดเงินออกรวม <code>>= inflow_amount * outflow_ratio_min</code> (รวมขอบเขตเท่ากับ) จะถูกทำเครื่องหมาย <code>REVIEW</code></li>
+                    <li><strong>ความปลอดภัยและความเป็นส่วนตัว (Zero PII):</strong> ซ่อน <code>account_id</code>, <code>operator_id</code>, และ <code>workstation_id</code> ตาม PII Blocklist และไม่อนุญาตให้เปิดเผยข้อมูลดิบ</li>
+                    <li><strong>สถานะยกเลิก (Exclusion):</strong> รายการที่มี <code>record_status == 'CANCELLED'</code> จะถูกคัดออกจากการคำนวณทั้งหมด</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>🔒 Security Enforced: Relative SQLite Mode=RO | Zero Raw PII Data Exposure | Approved Window Results Only</p>
+    </footer>
+
+    <script>
+        // State variables
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalFlagged = 0;
+
+        // Number formatters
+        const currencyFormatter = new Intl.NumberFormat("th-TH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        const percentFormatter = new Intl.NumberFormat("th-TH", {
+            style: "percent",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Read URL params if present
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has("large_in_min")) {
+                document.getElementById("large-in-min").value = urlParams.get("large_in_min");
+            }
+            if (urlParams.has("outflow_ratio_min")) {
+                document.getElementById("outflow-ratio-min").value = urlParams.get("outflow_ratio_min");
+            }
+            if (urlParams.has("window_days")) {
+                document.getElementById("window-days").value = urlParams.get("window_days");
+            }
+            if (urlParams.has("page_size")) {
+                document.getElementById("page-size").value = urlParams.get("page_size");
+            }
+            if (urlParams.has("page")) {
+                currentPage = parseInt(urlParams.get("page"), 10) || 1;
+            }
+
+            fetchResults(currentPage);
+        });
+
+        function applyPreset(largeIn, ratio, days) {
+            document.getElementById("large-in-min").value = largeIn;
+            document.getElementById("outflow-ratio-min").value = ratio;
+            document.getElementById("window-days").value = days;
+            document.getElementById("error-alert").style.display = "none";
+            currentPage = 1;
+            fetchResults(currentPage);
+        }
+
+        function handleFilterSubmit(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            currentPage = 1;
+            fetchResults(currentPage);
+        }
+
+        function resetFilters() {
+            document.getElementById("large-in-min").value = "500000";
+            document.getElementById("outflow-ratio-min").value = "0.80";
+            document.getElementById("window-days").value = "3";
+            document.getElementById("page-size").value = "20";
+            document.getElementById("error-alert").style.display = "none";
+            currentPage = 1;
+            fetchResults(currentPage);
+        }
+
+        async function fetchResults(page = 1) {
+            const largeInMin = parseFloat(document.getElementById("large-in-min").value);
+            const outflowRatioMin = parseFloat(document.getElementById("outflow-ratio-min").value);
+            const windowDays = parseInt(document.getElementById("window-days").value, 10);
+            const pageSize = parseInt(document.getElementById("page-size").value, 10) || 20;
+
+            const errorAlert = document.getElementById("error-alert");
+            errorAlert.style.display = "none";
+            errorAlert.innerHTML = "";
+
+            // Client-side quick validation check
+            const clientErrors = [];
+            if (isNaN(largeInMin) || largeInMin <= 0) {
+                clientErrors.push("ยอดเงินเข้าขั้นต่ำ (large_in_min) ต้องเป็นตัวเลขที่มากกว่า 0");
+            }
+            if (isNaN(outflowRatioMin) || outflowRatioMin <= 0 || outflowRatioMin > 1.0) {
+                clientErrors.push("สัดส่วนเงินออกขั้นต่ำ (outflow_ratio_min) ต้องอยู่ระหว่าง 0 ถึง 1.00 (ไม่เกิน 100%)");
+            }
+            if (isNaN(windowDays) || windowDays < 1) {
+                clientErrors.push("กรอบเวลา (window_days) ต้องเป็นจำนวนเต็มตั้งแต่ 1 วันขึ้นไป");
+            }
+
+            if (clientErrors.length > 0) {
+                showErrorAlert(clientErrors);
+                return;
+            }
+
+            const tbody = document.getElementById("results-tbody");
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <div class="empty-state-icon">⏳</div>
+                        <div>กำลังประมวลผลข้อมูล...</div>
+                    </td>
+                </tr>
+            `;
+
+            const btnApply = document.getElementById("btn-apply-filter");
+            if (btnApply) btnApply.disabled = true;
+
+            try {
+                const query = new URLSearchParams({
+                    large_in_min: largeInMin,
+                    outflow_ratio_min: outflowRatioMin,
+                    window_days: windowDays,
+                    page: page,
+                    page_size: pageSize
+                });
+
+                // Update browser URL query string cleanly
+                window.history.replaceState({}, "", `${window.location.pathname}?${query.toString()}`);
+
+                const resp = await fetch(`/api/v1/fast-in-out/results?${query.toString()}`);
+                
+                if (!resp.ok) {
+                    const errData = await resp.json().catch(() => ({}));
+                    const msgs = [];
+                    if (errData.errors && Array.isArray(errData.errors)) {
+                        msgs.push(...errData.errors);
+                    } else if (errData.detail) {
+                        if (Array.isArray(errData.detail)) {
+                            errData.detail.forEach(d => msgs.push(`${d.loc ? d.loc.join('.') : ''}: ${d.msg}`));
+                        } else {
+                            msgs.push(String(errData.detail));
+                        }
+                    } else {
+                        msgs.push(`HTTP ${resp.status}: ไม่สามารถดึงข้อมูลได้`);
+                    }
+                    showErrorAlert(msgs);
+                    renderEmptyTable("ไม่สามารถดึงข้อมูลได้เนื่องจากพารามิเตอร์ไม่ถูกต้อง");
+                    return;
+                }
+
+                const data = await resp.json();
+
+                if (data.status === "ERROR") {
+                    showErrorAlert(data.errors || ["เกิดข้อผิดพลาดในการตรวจสอบพารามิเตอร์"]);
+                    renderEmptyTable("ไม่สามารถดึงข้อมูลได้เนื่องจากพารามิเตอร์ไม่ถูกต้อง");
+                    return;
+                }
+
+                // Update summary stats
+                totalFlagged = data.total_flagged || 0;
+                totalPages = data.total_pages || 1;
+                currentPage = data.current_page || 1;
+
+                const evalParams = data.parameters || {
+                    large_in_min: largeInMin,
+                    outflow_ratio_min: outflowRatioMin,
+                    window_days: windowDays
+                };
+
+                document.getElementById("stat-flagged-count").textContent = totalFlagged.toLocaleString() + " หน้าต่าง";
+                document.getElementById("stat-thresholds").textContent = `≥ ฿${currencyFormatter.format(evalParams.large_in_min)} / ≥ ${(evalParams.outflow_ratio_min * 100).toFixed(0)}% (${evalParams.window_days} วัน)`;
+
+                const badgeElem = document.getElementById("stat-review-badge");
+                if (totalFlagged > 0) {
+                    badgeElem.innerHTML = `<span class="badge-tag badge-review">REVIEW (${totalFlagged.toLocaleString()})</span>`;
+                } else {
+                    badgeElem.innerHTML = `<span class="badge-tag badge-pass">PASS (0 รายการ)</span>`;
+                }
+
+                renderTableRows(data.results || [], evalParams);
+                updatePaginationControls();
+
+            } catch (err) {
+                console.error("Failed to fetch results:", err);
+                showErrorAlert(["ไม่สามารถเชื่อมต่อระบบ API หรือเซิร์ฟเวอร์ขัดข้อง"]);
+                renderEmptyTable("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+            } finally {
+                if (btnApply) btnApply.disabled = false;
+            }
+        }
+
+        function showErrorAlert(errors) {
+            const errorAlert = document.getElementById("error-alert");
+            errorAlert.innerHTML = `<strong>⚠️ ข้อผิดพลาด:</strong><ul style="margin-left: 1.2rem; margin-top: 0.3rem;">${errors.map(e => `<li>${escapeHtml(e)}</li>`).join("")}</ul>`;
+            errorAlert.style.display = "block";
+        }
+
+        function renderEmptyTable(message = "ไม่พบรายการที่เข้าเงื่อนไขตามเกณฑ์ที่กำหนด") {
+            const tbody = document.getElementById("results-tbody");
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <div style="font-size: 1.05rem; font-weight: 600; color: #10b981; margin-bottom: 0.25rem;">${escapeHtml(message)}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8;">ไม่พบหน้าต่างเวลาที่เข้าเกณฑ์เสี่ยงตามพารามิเตอร์ที่ระบุ</div>
+                    </td>
+                </tr>
+            `;
+            document.getElementById("table-record-info").textContent = "ทั้งหมด 0 รายการ";
+            document.getElementById("pagination-bar").style.display = "none";
+            const exportBtns = document.getElementById("export-buttons");
+            if (exportBtns) exportBtns.style.display = "none";
+        }
+
+        function renderTableRows(results, evalParams = {}) {
+            const tbody = document.getElementById("results-tbody");
+            if (!results || results.length === 0) {
+                renderEmptyTable("ไม่พบรายการที่เข้าเงื่อนไขตามเกณฑ์ที่กำหนด (PASS)");
+                return;
+            }
+
+            const targetRatioPct = ((evalParams.outflow_ratio_min || 0.80) * 100).toFixed(0);
+            const targetDays = evalParams.window_days || 3;
+
+            let html = "";
+            results.forEach(row => {
+                const ratioPct = (row.outflow_ratio * 100).toFixed(2);
+                const barWidth = Math.min(Math.max(row.outflow_ratio * 100, 5), 100);
+
+                html += `
+                    <tr>
+                        <td class="text-center mono" style="color: #94a3b8;">${row.row_no}</td>
+                        <td class="mono" style="font-weight: 500;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                                📅 ${escapeHtml(row.anchor_date)}
+                            </span>
+                        </td>
+                        <td class="text-right mono" style="font-weight: 600; color: #60a5fa;">
+                            ฿${currencyFormatter.format(row.inflow_amount)}
+                        </td>
+                        <td class="text-right mono" style="font-weight: 600; color: #f87171;">
+                            ฿${currencyFormatter.format(row.outflow_total)}
+                        </td>
+                        <td class="text-right">
+                            <div class="ratio-meter" style="justify-content: flex-end;">
+                                <div class="ratio-bar-bg" title="Ratio: ${ratioPct}%">
+                                    <div class="ratio-bar-fill" style="width: ${barWidth}%;"></div>
+                                </div>
+                                <span class="mono" style="font-weight: 700; color: #fca5a5;">${ratioPct}%</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge-tag badge-review">REVIEW</span>
+                            <div style="font-size: 0.75rem; color: #fca5a5; margin-top: 0.35rem; line-height: 1.35; text-align: center;">
+                                เงินออก ฿${currencyFormatter.format(row.outflow_total)} (${ratioPct}%) ถึงเกณฑ์ (≥ ${targetRatioPct}%) ใน ${targetDays} วัน
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById("table-record-info").textContent = `แสดงผลแถวที่ ${results[0].row_no} - ${results[results.length - 1].row_no} จากทั้งหมด ${totalFlagged.toLocaleString()} รายการ`;
+        }
+
+        function updatePaginationControls() {
+            const paginationBar = document.getElementById("pagination-bar");
+            const exportBtns = document.getElementById("export-buttons");
+            if (totalFlagged <= 0) {
+                paginationBar.style.display = "none";
+                if (exportBtns) exportBtns.style.display = "none";
+                return;
+            }
+
+            paginationBar.style.display = "flex";
+            if (exportBtns) exportBtns.style.display = "flex";
+            document.getElementById("pagination-info-text").textContent = `หน้า ${currentPage} จาก ${totalPages} หน้า (ทั้งหมด ${totalFlagged.toLocaleString()} รายการ)`;
+            document.getElementById("page-display").textContent = `หน้า ${currentPage} / ${totalPages}`;
+
+            document.getElementById("btn-first-page").disabled = (currentPage <= 1);
+            document.getElementById("btn-prev-page").disabled = (currentPage <= 1);
+            document.getElementById("btn-next-page").disabled = (currentPage >= totalPages);
+            document.getElementById("btn-last-page").disabled = (currentPage >= totalPages);
+        }
+
+        function goToPage(page) {
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+            currentPage = page;
+            fetchResults(currentPage);
+        }
+
+        function goToPrevPage() {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        }
+
+        function goToNextPage() {
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        function goToLastPage() {
+            goToPage(totalPages);
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function exportResults(format) {
+            if (totalFlagged <= 0) return;
+            
+            const largeInMin = document.getElementById("large-in-min").value;
+            const outflowRatioMin = document.getElementById("outflow-ratio-min").value;
+            const windowDays = document.getElementById("window-days").value;
+            
+            const query = new URLSearchParams({
+                format: format,
+                large_in_min: largeInMin,
+                outflow_ratio_min: outflowRatioMin,
+                window_days: windowDays
+            });
+            
+            window.open(`/api/v1/fast-in-out/export?${query.toString()}`, '_blank');
+        }
+    </script>
+</body>
+</html>

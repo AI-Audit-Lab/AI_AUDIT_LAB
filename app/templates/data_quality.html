@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} - Data Quality Check</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .rule-card {
+            background: rgba(22, 30, 46, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .rule-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        .rule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.6rem;
+        }
+        .rule-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .rule-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+        .rule-value.error {
+            color: #ef4444;
+        }
+        .rule-value.warning {
+            color: #f59e0b;
+        }
+        .rule-desc {
+            color: #94a3b8;
+            font-size: 0.925rem;
+            max-width: 700px;
+        }
+        .badge-expected {
+            font-size: 0.8rem;
+            background: rgba(245, 158, 11, 0.15);
+            color: #fcd34d;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <h1>{{ app_name }}</h1>
+        </div>
+        <nav style="margin-right: auto; margin-left: 2rem;">
+            <a href="/" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">📊 Dashboard</a>
+            <a href="/data-quality" style="color: white; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); text-decoration: none; margin-right: 0.5rem; font-weight: 600;">🔍 Data Quality Check</a>
+            <a href="/fast-in-out-results" style="color: #93c5fd; text-decoration: none; margin-right: 0.5rem;">⚡ FAST_IN_OUT Results</a>
+            <a href="/safe-data-check" style="color: #4ade80; text-decoration: none; font-weight: 600;">🛡️ Safe Data Check</a>
+        </nav>
+        <div class="status-pill">
+            <span class="status-dot"></span> SQLite: Connected (Read-Only)
+        </div>
+    </header>
+
+    <main>
+        <section>
+            <h2>🔍 ผลการตรวจสอบคุณภาพข้อมูล (Data Quality Check)</h2>
+            <p style="color: #94a3b8; margin-bottom: 1.5rem; font-size: 0.95rem;">
+                รายการตรวจสอบกฎคุณภาพข้อมูล 4 ข้อบนตาราง transactions แสดงเฉพาะตัวเลขสรุป (Aggregate Metrics) ปราศจากข้อมูลดิบและ PII
+            </p>
+
+            <div class="rule-card">
+                <div class="rule-header">
+                    <span>กฎที่ 1: จำนวนรายการ Transactions ทั้งหมด (Total Records)</span>
+                    <span class="badge-expected">จำนวนที่ควรได้: UNKNOWN</span>
+                </div>
+                <div class="rule-content">
+                    <div class="rule-desc">นับจำนวนแถวทั้งหมดในตาราง <code>transactions</code> (ตารางประมวลผลหลัก)</div>
+                    <div class="rule-value" id="rule1-val">กำลังโหลด...</div>
+                </div>
+            </div>
+
+            <div class="rule-card">
+                <div class="rule-header">
+                    <span>กฎที่ 2: รายการที่ไม่มีบัญชีใน Deposit Accounts (Orphaned Account Integrity)</span>
+                    <span class="badge-expected">จำนวนที่ควรได้: UNKNOWN</span>
+                </div>
+                <div class="rule-content">
+                    <div class="rule-desc">นับรายการที่ <code>account_id</code> ใน <code>transactions</code> ไม่มีคู่แมตช์ในตาราง <code>deposit_accounts</code></div>
+                    <div class="rule-value" id="rule2-val">กำลังโหลด...</div>
+                </div>
+            </div>
+
+            <div class="rule-card">
+                <div class="rule-header">
+                    <span>กฎที่ 3: แหล่งอ้างอิงซ้ำ (Source Reference Uniqueness)</span>
+                    <span class="badge-expected">จำนวนที่ควรได้: UNKNOWN</span>
+                </div>
+                <div class="rule-content">
+                    <div class="rule-desc">นับกลุ่มของ <code>source_ref</code> ที่ไม่ว่างและซ้ำกัน (มีมากกว่า 1 รายการ) พร้อมจำนวนแถวทั้งหมดที่เกี่ยวข้อง</div>
+                    <div style="text-align: right;">
+                        <div class="rule-value" id="rule3-groups-val">กำลังโหลด...</div>
+                        <div class="rule-desc" id="rule3-rows-val" style="margin-top: 0.2rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rule-card">
+                <div class="rule-header">
+                    <span>กฎที่ 4: รหัสรายการไม่ถูกต้อง (Valid Transaction Code: DEP/WDL)</span>
+                    <span class="badge-expected">จำนวนที่ควรได้: UNKNOWN</span>
+                </div>
+                <div class="rule-content">
+                    <div class="rule-desc">นับรายการที่ <code>transaction_code</code> ไม่อยู่ในชุดค่าที่คาดหวัง ('DEP', 'WDL')</div>
+                    <div class="rule-value" id="rule4-val">กำลังโหลด...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>🔒 Security Enforced: Relative SQLite Mode=RO | Zero Raw PII Data Exposure | Participant Manual Inspection Required</p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            try {
+                const response = await fetch("/api/v1/data-quality");
+                if (!response.ok) throw new Error("API failed");
+                const data = await response.json();
+                
+                // Rule 1
+                document.getElementById("rule1-val").textContent = data.total_transactions.toLocaleString();
+                
+                // Rule 2
+                const r2 = document.getElementById("rule2-val");
+                r2.textContent = data.unmatched_account_count.toLocaleString();
+                if (data.unmatched_account_count > 0) r2.classList.add("error");
+                
+                // Rule 3
+                const r3g = document.getElementById("rule3-groups-val");
+                r3g.textContent = data.duplicate_source_ref_groups.toLocaleString() + " กลุ่ม";
+                if (data.duplicate_source_ref_groups > 0) r3g.classList.add("warning");
+                
+                document.getElementById("rule3-rows-val").textContent = `(รวม ${data.duplicate_source_ref_rows.toLocaleString()} แถวในกลุ่มซ้ำ)`;
+                
+                // Rule 4
+                const r4 = document.getElementById("rule4-val");
+                r4.textContent = data.invalid_code_count.toLocaleString();
+                if (data.invalid_code_count > 0) r4.classList.add("error");
+                
+            } catch (err) {
+                console.error(err);
+                document.querySelectorAll(".rule-value").forEach(el => el.textContent = "เกิดข้อผิดพลาด");
+            }
+        });
+    </script>
+</body>
+</html>
