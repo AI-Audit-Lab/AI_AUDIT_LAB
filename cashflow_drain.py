@@ -38,8 +38,10 @@ from datetime import datetime, timedelta
 # Constants — change here without touching core logic (PROJECT_RULES §4)
 # ---------------------------------------------------------------------------
 
-DB_PATH     = "file:data/training_data.sqlite3?mode=ro"   # Read-Only
-OUTPUT_DIR  = "output"
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB  = os.path.join(BASE_DIR, "data", "training_data.sqlite3").replace("\\", "/")
+DB_PATH     = os.environ.get("AUDIT_DB_PATH", f"file:{DEFAULT_DB}?mode=ro")   # Read-Only
+OUTPUT_DIR  = os.path.join(BASE_DIR, "output")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "cashflow_drain_report.json")
 
 # Default threshold values — separated from logic so they are easy to change

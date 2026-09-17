@@ -4,8 +4,10 @@ import os
 import math
 from datetime import datetime
 
-DB_PATH = "file:data/training_data.sqlite3?mode=ro"
-OUTPUT_DIR = "output"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_FILE = os.path.join(BASE_DIR, "data", "training_data.sqlite3").replace("\\", "/")
+DB_PATH = os.environ.get("AUDIT_DB_PATH", f"file:{DEFAULT_DB_FILE}?mode=ro")
+OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 JSON_REPORT_PATH = os.path.join(OUTPUT_DIR, "audit_summary_report.json")
 MD_REPORT_PATH = os.path.join(OUTPUT_DIR, "audit_summary_report.md")
 

@@ -2,9 +2,10 @@ import os
 
 # Calculate project base directory relative to config.py location
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_FILE = os.path.join(BASE_DIR, "data", "training_data.sqlite3")
+DEFAULT_DB_FILE = os.path.join(BASE_DIR, "data", "training_data.sqlite3").replace("\\", "/")
+DB_FILE = os.environ.get("AUDIT_DB_FILE", DEFAULT_DB_FILE)
 DB_PATH_POSIX = DB_FILE.replace("\\", "/")
-DB_URI = f"file:{DB_PATH_POSIX}?mode=ro"
+DB_URI = os.environ.get("AUDIT_DB_URI", f"file:{DB_PATH_POSIX}?mode=ro")
 
 APP_NAME = "Mini Financial Audit Tool"
 API_PREFIX = "/api/v1"
